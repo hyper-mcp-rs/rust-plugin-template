@@ -1,7 +1,7 @@
-use extism_pdk::{Error, Json, Memory, extism::error_set, input, output};
+use extism_pdk::{extism::error_set, input, output, Error, Json, Memory};
 
 pub(crate) fn return_error(e: Error) -> i32 {
-    let err = format!("{:?}", e);
+    let err = format!("{e:?}");
     let mem = Memory::from_bytes(&err).unwrap();
     unsafe {
         error_set(mem.offset());

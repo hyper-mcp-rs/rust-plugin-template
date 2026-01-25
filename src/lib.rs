@@ -1,6 +1,6 @@
 mod pdk;
 
-use anyhow::{Result, anyhow};
+use anyhow::{anyhow, Result};
 use pdk::types::*;
 
 pub(crate) fn call_tool(_input: CallToolRequest) -> Result<CallToolResult> {
