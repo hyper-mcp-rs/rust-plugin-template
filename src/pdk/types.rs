@@ -337,13 +337,53 @@ type CreateMessageResultContent = SamplingMessage;
 
 #[derive(Default, Debug, Clone, Serialize, Deserialize, FromBytes, ToBytes)]
 #[encoding(Json)]
-pub struct ElicitRequestParamWithTimeout {
-    /// Message to present to the user
-    #[serde(rename = "message")]
-    pub message: String,
+pub struct ElicitationResponseNotificationParam {
+    /// URI of the updated resource
+    #[serde(rename = "elicitationId")]
+    pub elicitation_id: String,
+}
 
-    #[serde(rename = "requestedSchema")]
-    pub requested_schema: Schema,
+#[derive(Debug, Clone, Serialize, Deserialize, FromBytes, ToBytes)]
+#[encoding(Json)]
+#[serde(tag = "mode")]
+pub enum ElicitationRequestParam {
+    #[serde(rename = "form")]
+    Form {
+        /// Message to present to the user
+        #[serde(rename = "message")]
+        message: String,
+
+        #[serde(rename = "requestedSchema")]
+        requested_schema: Schema,
+    },
+    #[serde(rename = "url")]
+    Url {
+        #[serde(rename = "elicitationId")]
+        elicitation_id: String,
+
+        /// Message to present to the user
+        #[serde(rename = "message")]
+        message: String,
+
+        #[serde(rename = "url")]
+        url: String,
+    },
+}
+
+impl Default for ElicitationRequestParam {
+    fn default() -> Self {
+        ElicitationRequestParam::Form {
+            message: String::new(),
+            requested_schema: Schema::default(),
+        }
+    }
+}
+
+#[derive(Default, Debug, Clone, Serialize, Deserialize, FromBytes, ToBytes)]
+#[encoding(Json)]
+pub struct ElicitationRequestParamWithTimeout {
+    #[serde(flatten)]
+    pub inner: ElicitationRequestParam,
 
     /// Optional timeout in milliseconds
     #[serde(rename = "timeout")]
@@ -354,20 +394,20 @@ pub struct ElicitRequestParamWithTimeout {
 
 #[derive(Default, Debug, Clone, Serialize, Deserialize, FromBytes, ToBytes)]
 #[encoding(Json)]
-pub struct ElicitResult {
+pub struct ElicitationResult {
     #[serde(rename = "action")]
-    pub action: ElicitResultAction,
+    pub action: ElicitationResultAction,
 
     /// Form data submitted by user (only present when action is accept)
     #[serde(rename = "content")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(default)]
-    pub content: Option<HashMap<String, ElicitResultContentValue>>,
+    pub content: Option<HashMap<String, ElicitationResultContentValue>>,
 }
 
 #[derive(Default, Debug, Clone, Serialize, Deserialize, FromBytes, ToBytes)]
 #[encoding(Json)]
-pub enum ElicitResultAction {
+pub enum ElicitationResultAction {
     #[default]
     #[serde(rename = "accept")]
     Accept,
@@ -380,7 +420,7 @@ pub enum ElicitResultAction {
 #[derive(Debug, Clone, Serialize, Deserialize, FromBytes, ToBytes)]
 #[encoding(Json)]
 #[serde(untagged)]
-pub enum ElicitResultContentValue {
+pub enum ElicitationResultContentValue {
     String(String),
     Number(Number), // or serde_json::Number if you want exactness
     Bool(bool),

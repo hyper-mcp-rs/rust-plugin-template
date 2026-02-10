@@ -9,8 +9,8 @@ use std::result::Result;
 /// It takes input of CreateElicitationRequestParamWithTimeout ()
 /// And it returns an output CreateElicitationResult ()
 pub(crate) fn create_elicitation(
-    input: ElicitRequestParamWithTimeout,
-) -> Result<ElicitResult, Error> {
+    input: ElicitationRequestParamWithTimeout,
+) -> Result<ElicitationResult, Error> {
     let Json(res) = unsafe { raw_imports::create_elicitation(Json(input))? };
 
     Ok(res)
@@ -93,13 +93,20 @@ pub(crate) fn notify_tool_list_changed() -> Result<(), Error> {
     Ok(())
 }
 
+pub(crate) fn notify_url_elicitation_completed(
+    input: ElicitationResponseNotificationParam,
+) -> Result<(), Error> {
+    unsafe { raw_imports::notify_url_elicitation_completed(Json(input))? }
+    Ok(())
+}
+
 mod raw_imports {
     use super::*;
     #[host_fn]
     extern "ExtismHost" {
         pub(crate) fn create_elicitation(
-            input: Json<ElicitRequestParamWithTimeout>,
-        ) -> Json<ElicitResult>;
+            input: Json<ElicitationRequestParamWithTimeout>,
+        ) -> Json<ElicitationResult>;
 
         pub(crate) fn create_message(
             input: Json<CreateMessageRequestParam>,
@@ -118,5 +125,9 @@ mod raw_imports {
         pub(crate) fn notify_resource_updated(input: Json<ResourceUpdatedNotificationParam>);
 
         pub(crate) fn notify_tool_list_changed();
+
+        pub(crate) fn notify_url_elicitation_completed(
+            input: Json<ElicitationResponseNotificationParam>,
+        );
     }
 }
