@@ -30,6 +30,14 @@ pub(crate) fn create_message(
     Ok(res)
 }
 
+/// get_keyring_secret Gets a secret from the host's keyring (if allowed).
+///
+/// Plugins can use this to obtain secrets stored for them in the host's keyring.
+#[allow(unused)]
+pub(crate) fn get_keyring_secret(input: KeyringEntryId) -> Result<Vec<u8>, Error> {
+    unsafe { raw_imports::get_keyring_secret(Json(input)) }
+}
+
 /// list_roots List the client's root directories or resources.
 ///
 /// Plugins can query this to discover what root resources (typically file system roots) are available on the client side. This helps plugins understand the scope of resources they can access.
@@ -111,6 +119,8 @@ mod raw_imports {
         pub(crate) fn create_message(
             input: Json<CreateMessageRequestParam>,
         ) -> Json<CreateMessageResult>;
+
+        pub(crate) fn get_keyring_secret(input: Json<KeyringEntryId>) -> Vec<u8>;
 
         pub(crate) fn list_roots() -> Json<ListRootsResult>;
 
