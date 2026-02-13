@@ -12,7 +12,6 @@ base64_serde_type!(Base64Standard, STANDARD);
 #[encoding(Json)]
 pub struct Annotations {
     /// Intended audience for the resource
-    #[serde(rename = "audience")]
     pub audience: Vec<Role>,
 
     /// Last modified timestamp for the resource
@@ -20,7 +19,6 @@ pub struct Annotations {
     pub last_modified: chrono::DateTime<chrono::Utc>,
 
     /// Priority level indicating the importance of the resource
-    #[serde(rename = "priority")]
     pub priority: f32,
 }
 
@@ -34,20 +32,17 @@ pub struct AudioContent {
     pub meta: Option<Meta>,
 
     /// Optional content annotations
-    #[serde(rename = "annotations")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(default)]
     pub annotations: Option<Annotations>,
 
     /// Base64-encoded audio data
-    #[serde(rename = "data")]
     pub data: String,
 
     /// MIME type of the audio (e.g. 'audio/mpeg')
     #[serde(rename = "mimeType")]
     pub mime_type: String,
 
-    #[serde(rename = "type")]
     pub r#type: AudioType,
 }
 
@@ -69,7 +64,6 @@ pub struct BlobResourceContents {
     pub meta: Option<Meta>,
 
     /// Base64-encoded binary data of the resource
-    #[serde(rename = "blob")]
     pub blob: String,
 
     /// MIME type of the binary content (e.g. 'application/pdf')
@@ -79,7 +73,6 @@ pub struct BlobResourceContents {
     pub mime_type: Option<String>,
 
     /// URI of the resource
-    #[serde(rename = "uri")]
     pub uri: String,
 }
 
@@ -87,24 +80,20 @@ pub struct BlobResourceContents {
 #[encoding(Json)]
 pub struct BooleanSchema {
     /// Optional default value
-    #[serde(rename = "default")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(default)]
     pub default: Option<bool>,
 
     /// Description of the boolean input
-    #[serde(rename = "description")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(default)]
     pub description: Option<String>,
 
     /// Optional human-readable title
-    #[serde(rename = "title")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(default)]
     pub title: Option<String>,
 
-    #[serde(rename = "type")]
     pub r#type: BooleanType,
 }
 
@@ -119,10 +108,8 @@ pub enum BooleanType {
 #[derive(Default, Debug, Clone, Serialize, Deserialize, FromBytes, ToBytes)]
 #[encoding(Json)]
 pub struct CallToolRequest {
-    #[serde(rename = "context")]
     pub context: PluginRequestContext,
 
-    #[serde(rename = "request")]
     pub request: CallToolRequestParam,
 }
 
@@ -130,13 +117,11 @@ pub struct CallToolRequest {
 #[encoding(Json)]
 pub struct CallToolRequestParam {
     /// Arguments to pass to the tool
-    #[serde(rename = "arguments")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(default)]
     pub arguments: Option<Map<String, Value>>,
 
     /// The name of the tool to call
-    #[serde(rename = "name")]
     pub name: String,
 }
 
@@ -150,7 +135,6 @@ pub struct CallToolResult {
     pub meta: Option<Meta>,
 
     /// Array of TextContent, ImageContent, AudioContent, EmbeddedResource, or ResourceLinks representing the result
-    #[serde(rename = "content")]
     pub content: Vec<ContentBlock>,
 
     /// Whether the tool call ended in an error. If not set, defaults to false.
@@ -169,26 +153,21 @@ pub struct CallToolResult {
 #[derive(Debug, Clone, Serialize, Deserialize, FromBytes, ToBytes)]
 #[encoding(Json)]
 pub struct CompleteRequest {
-    #[serde(rename = "context")]
     pub context: PluginRequestContext,
 
-    #[serde(rename = "request")]
     pub request: CompleteRequestParam,
 }
 
 #[derive(Default, Debug, Clone, Serialize, Deserialize, FromBytes, ToBytes)]
 #[encoding(Json)]
 pub struct CompleteRequestParam {
-    #[serde(rename = "argument")]
     pub argument: CompleteRequestParamArgument,
 
     /// Optional completion context with previously-resolved arguments
-    #[serde(rename = "context")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub context: Option<CompleteRequestParamContext>,
 
     /// Reference to either a PromptReference or ResourceTemplateReference
-    #[serde(rename = "ref")]
     pub r#ref: Reference,
 }
 
@@ -196,11 +175,9 @@ pub struct CompleteRequestParam {
 #[encoding(Json)]
 pub struct CompleteRequestParamArgument {
     /// Name of the argument
-    #[serde(rename = "name")]
     pub name: String,
 
     /// Current value to complete
-    #[serde(rename = "value")]
     pub value: String,
 }
 
@@ -208,7 +185,6 @@ pub struct CompleteRequestParamArgument {
 #[encoding(Json)]
 pub struct CompleteRequestParamContext {
     /// Previously-resolved argument values
-    #[serde(rename = "arguments")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(default)]
     pub arguments: Option<HashMap<String, String>>,
@@ -217,7 +193,6 @@ pub struct CompleteRequestParamContext {
 #[derive(Default, Debug, Clone, Serialize, Deserialize, FromBytes, ToBytes)]
 #[encoding(Json)]
 pub struct CompleteResult {
-    #[serde(rename = "completion")]
     pub completion: CompleteResultCompletion,
 }
 
@@ -231,13 +206,11 @@ pub struct CompleteResultCompletion {
     pub has_more: Option<bool>,
 
     /// Total number of available completions
-    #[serde(rename = "total")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(default)]
     pub total: Option<i64>,
 
     /// Array of completion values (max 100 items)
-    #[serde(rename = "values")]
     pub values: Vec<String>,
 }
 
@@ -272,8 +245,11 @@ pub struct CreateMessageRequestParam {
     pub max_tokens: i64,
 
     /// Conversation messages of of TextContent, ImageContent or AudioContent
-    #[serde(rename = "messages")]
     pub messages: Vec<SamplingMessage>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default)]
+    pub metadata: Option<Value>,
 
     /// Preferences for model selection
     #[serde(rename = "modelPreferences")]
@@ -293,11 +269,23 @@ pub struct CreateMessageRequestParam {
     #[serde(default)]
     pub system_prompt: Option<String>,
 
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default)]
+    pub task: Option<Map<String, Value>>,
+
     /// Sampling temperature
-    #[serde(rename = "temperature")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(default)]
     pub temperature: Option<f64>,
+
+    #[serde(rename = "toolChoice")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default)]
+    pub tool_choice: Option<ToolChoice>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default)]
+    pub tools: Option<Vec<Tool>>,
 }
 
 #[derive(Default, Debug, Clone, Serialize, Deserialize, FromBytes, ToBytes)]
@@ -316,14 +304,11 @@ pub enum CreateMessageRequestParamIncludeContext {
 #[encoding(Json)]
 pub struct CreateMessageResult {
     /// One of TextContent, ImageContent or AudioContent
-    #[serde(rename = "content")]
     pub content: CreateMessageResultContent,
 
     /// Name of the model used
-    #[serde(rename = "model")]
     pub model: String,
 
-    #[serde(rename = "role")]
     pub role: Role,
 
     /// Optional reason sampling stopped
@@ -386,7 +371,6 @@ pub struct ElicitationRequestParamWithTimeout {
     pub inner: ElicitationRequestParam,
 
     /// Optional timeout in milliseconds
-    #[serde(rename = "timeout")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(default)]
     pub timeout: Option<i64>,
@@ -395,11 +379,9 @@ pub struct ElicitationRequestParamWithTimeout {
 #[derive(Default, Debug, Clone, Serialize, Deserialize, FromBytes, ToBytes)]
 #[encoding(Json)]
 pub struct ElicitationResult {
-    #[serde(rename = "action")]
     pub action: ElicitationResultAction,
 
     /// Form data submitted by user (only present when action is accept)
-    #[serde(rename = "content")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(default)]
     pub content: Option<HashMap<String, ElicitationResultContentValue>>,
@@ -436,16 +418,13 @@ pub struct EmbeddedResource {
     pub meta: Option<Meta>,
 
     /// Optional resource annotations
-    #[serde(rename = "annotations")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(default)]
     pub annotations: Option<Annotations>,
 
     /// The embedded TextResourceContents or BlobResourceContents
-    #[serde(rename = "resource")]
     pub resource: ResourceContents,
 
-    #[serde(rename = "type")]
     pub r#type: ResourceType,
 }
 
@@ -457,13 +436,11 @@ pub struct Empty {}
 #[encoding(Json)]
 pub struct EnumSchema {
     /// Description of the enum input
-    #[serde(rename = "description")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(default)]
     pub description: Option<String>,
 
     /// Array of allowed string values
-    #[serde(rename = "enum")]
     pub r#enum: Vec<String>,
 
     /// Optional array of human-readable names for the enum values
@@ -473,22 +450,18 @@ pub struct EnumSchema {
     pub enum_names: Option<Vec<String>>,
 
     /// Optional human-readable title
-    #[serde(rename = "title")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(default)]
     pub title: Option<String>,
 
-    #[serde(rename = "type")]
     pub r#type: StringType,
 }
 
 #[derive(Default, Debug, Clone, Serialize, Deserialize, FromBytes, ToBytes)]
 #[encoding(Json)]
 pub struct GetPromptRequest {
-    #[serde(rename = "context")]
     pub context: PluginRequestContext,
 
-    #[serde(rename = "request")]
     pub request: GetPromptRequestParam,
 }
 
@@ -496,13 +469,11 @@ pub struct GetPromptRequest {
 #[encoding(Json)]
 pub struct GetPromptRequestParam {
     /// Arguments for templating the prompt
-    #[serde(rename = "arguments")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(default)]
     pub arguments: Option<HashMap<String, String>>,
 
     /// Name of the prompt to retrieve
-    #[serde(rename = "name")]
     pub name: String,
 }
 
@@ -510,13 +481,11 @@ pub struct GetPromptRequestParam {
 #[encoding(Json)]
 pub struct GetPromptResult {
     /// Optional description of the prompt
-    #[serde(rename = "description")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(default)]
     pub description: Option<String>,
 
     /// Array of prompt messages
-    #[serde(rename = "messages")]
     pub messages: Vec<PromptMessage>,
 }
 
@@ -530,20 +499,17 @@ pub struct ImageContent {
     pub meta: Option<Meta>,
 
     /// Optional content annotations
-    #[serde(rename = "annotations")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(default)]
     pub annotations: Option<Annotations>,
 
     /// Base64-encoded image data
-    #[serde(rename = "data")]
     pub data: String,
 
     /// MIME type of the image (e.g. 'image/png')
     #[serde(rename = "mimeType")]
     pub mime_type: String,
 
-    #[serde(rename = "type")]
     pub r#type: ImageType,
 }
 
@@ -557,8 +523,14 @@ pub enum ImageType {
 
 #[derive(Default, Debug, Clone, Serialize, Deserialize, FromBytes, ToBytes)]
 #[encoding(Json)]
+pub struct KeyringEntryId {
+    pub service: String,
+    pub user: String,
+}
+
+#[derive(Default, Debug, Clone, Serialize, Deserialize, FromBytes, ToBytes)]
+#[encoding(Json)]
 pub struct ListPromptsRequest {
-    #[serde(rename = "context")]
     pub context: PluginRequestContext,
 }
 
@@ -566,14 +538,12 @@ pub struct ListPromptsRequest {
 #[encoding(Json)]
 pub struct ListPromptsResult {
     /// Array of available prompts
-    #[serde(rename = "prompts")]
     pub prompts: Vec<Prompt>,
 }
 
 #[derive(Default, Debug, Clone, Serialize, Deserialize, FromBytes, ToBytes)]
 #[encoding(Json)]
 pub struct ListResourcesRequest {
-    #[serde(rename = "context")]
     pub context: PluginRequestContext,
 }
 
@@ -581,14 +551,12 @@ pub struct ListResourcesRequest {
 #[encoding(Json)]
 pub struct ListResourcesResult {
     /// Array of available resources
-    #[serde(rename = "resources")]
     pub resources: Vec<Resource>,
 }
 
 #[derive(Default, Debug, Clone, Serialize, Deserialize, FromBytes, ToBytes)]
 #[encoding(Json)]
 pub struct ListResourceTemplatesRequest {
-    #[serde(rename = "context")]
     pub context: PluginRequestContext,
 }
 
@@ -604,14 +572,12 @@ pub struct ListResourceTemplatesResult {
 #[encoding(Json)]
 pub struct ListRootsResult {
     /// Array of root directories/resources
-    #[serde(rename = "roots")]
     pub roots: Vec<Root>,
 }
 
 #[derive(Default, Debug, Clone, Serialize, Deserialize, FromBytes, ToBytes)]
 #[encoding(Json)]
 pub struct ListToolsRequest {
-    #[serde(rename = "context")]
     pub context: PluginRequestContext,
 }
 
@@ -619,7 +585,6 @@ pub struct ListToolsRequest {
 #[encoding(Json)]
 pub struct ListToolsResult {
     /// Array of available tools
-    #[serde(rename = "tools")]
     pub tools: Vec<Tool>,
 }
 
@@ -649,14 +614,11 @@ pub enum LoggingLevel {
 #[encoding(Json)]
 pub struct LoggingMessageNotificationParam {
     /// Data to log (any JSON-serializable type)
-    #[serde(rename = "data")]
     pub data: Value,
 
-    #[serde(rename = "level")]
     pub level: LoggingLevel,
 
     /// Optional logger name
-    #[serde(rename = "logger")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(default)]
     pub logger: Option<String>,
@@ -668,7 +630,6 @@ type Meta = Map<String, Value>;
 #[encoding(Json)]
 pub struct ModelHint {
     /// Suggested model name or family
-    #[serde(rename = "name")]
     pub name: String,
 }
 
@@ -676,11 +637,9 @@ pub struct ModelHint {
 #[encoding(Json)]
 pub struct ModelPreferences {
     /// Priority for cost (0-1)
-    #[serde(rename = "costPriority")]
     pub cost_priority: f32,
 
     /// Model name hints
-    #[serde(rename = "hints")]
     pub hints: Vec<ModelHint>,
 
     /// Priority for intelligence (0-1)
@@ -696,30 +655,25 @@ pub struct ModelPreferences {
 #[encoding(Json)]
 pub struct NumberSchema {
     /// Description of the number input
-    #[serde(rename = "description")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(default)]
     pub description: Option<String>,
 
     /// Maximum value
-    #[serde(rename = "maximum")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(default)]
     pub maximum: Option<f64>,
 
     /// Minimum value
-    #[serde(rename = "minimum")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(default)]
     pub minimum: Option<f64>,
 
     /// Optional human-readable title
-    #[serde(rename = "title")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(default)]
     pub title: Option<String>,
 
-    #[serde(rename = "type")]
     pub r#type: NumberType,
 }
 
@@ -745,7 +699,7 @@ pub enum ObjectType {
 #[encoding(Json)]
 pub struct PluginNotificationContext {
     /// Additional metadata about the notification
-    #[serde(rename = "meta")]
+    #[serde(rename = "_meta")]
     pub meta: Meta,
 }
 
@@ -757,7 +711,6 @@ pub struct PluginRequestContext {
     pub meta: Meta,
 
     /// Unique identifier for this request
-    #[serde(rename = "id")]
     pub id: PluginRequestId,
 }
 
@@ -796,13 +749,11 @@ impl Default for PrimitiveSchemaDefinition {
 #[encoding(Json)]
 pub struct ProgressNotificationParam {
     /// Optional progress message describing current operation
-    #[serde(rename = "message")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(default)]
     pub message: Option<String>,
 
     /// The progress thus far
-    #[serde(rename = "progress")]
     pub progress: f64,
 
     /// A token identifying the progress context
@@ -810,7 +761,6 @@ pub struct ProgressNotificationParam {
     pub progress_token: String,
 
     /// Optional total units of work
-    #[serde(rename = "total")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(default)]
     pub total: Option<f64>,
@@ -820,23 +770,19 @@ pub struct ProgressNotificationParam {
 #[encoding(Json)]
 pub struct Prompt {
     /// Optional prompt arguments
-    #[serde(rename = "arguments")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(default)]
     pub arguments: Option<Vec<PromptArgument>>,
 
     /// Description of what the prompt does
-    #[serde(rename = "description")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(default)]
     pub description: Option<String>,
 
     /// Unique name of the prompt
-    #[serde(rename = "name")]
     pub name: String,
 
     /// Human-readable title
-    #[serde(rename = "title")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(default)]
     pub title: Option<String>,
@@ -846,23 +792,19 @@ pub struct Prompt {
 #[encoding(Json)]
 pub struct PromptArgument {
     /// Description of the argument
-    #[serde(rename = "description")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(default)]
     pub description: Option<String>,
 
     /// Name of the argument
-    #[serde(rename = "name")]
     pub name: String,
 
     /// Whether this argument is required
-    #[serde(rename = "required")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(default)]
     pub required: Option<bool>,
 
     /// Human-readable title
-    #[serde(rename = "title")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(default)]
     pub title: Option<String>,
@@ -872,10 +814,8 @@ pub struct PromptArgument {
 #[encoding(Json)]
 pub struct PromptMessage {
     /// One of TextContent, ImageContent, AudioContent, EmbeddedResource, or ResourceLink
-    #[serde(rename = "content")]
     pub content: ContentBlock,
 
-    #[serde(rename = "role")]
     pub role: Role,
 }
 
@@ -883,16 +823,13 @@ pub struct PromptMessage {
 #[encoding(Json)]
 pub struct PromptReference {
     /// Name of the prompt
-    #[serde(rename = "name")]
     pub name: String,
 
     /// Optional human-readable title
-    #[serde(rename = "title")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(default)]
     pub title: Option<String>,
 
-    #[serde(rename = "type")]
     pub r#type: PromptReferenceType,
 }
 
@@ -907,10 +844,8 @@ pub enum PromptReferenceType {
 #[derive(Default, Debug, Clone, Serialize, Deserialize, FromBytes, ToBytes)]
 #[encoding(Json)]
 pub struct ReadResourceRequest {
-    #[serde(rename = "context")]
     pub context: PluginRequestContext,
 
-    #[serde(rename = "request")]
     pub request: ReadResourceRequestParam,
 }
 
@@ -918,7 +853,6 @@ pub struct ReadResourceRequest {
 #[encoding(Json)]
 pub struct ReadResourceRequestParam {
     /// URI of the resource to read
-    #[serde(rename = "uri")]
     pub uri: String,
 }
 
@@ -926,7 +860,6 @@ pub struct ReadResourceRequestParam {
 #[encoding(Json)]
 pub struct ReadResourceResult {
     /// Array of TextResourceContents or BlobResourceContents
-    #[serde(rename = "contents")]
     pub contents: Vec<ResourceContents>,
 }
 
@@ -949,13 +882,11 @@ impl Default for Reference {
 #[encoding(Json)]
 pub struct Resource {
     /// Optional resource annotations
-    #[serde(rename = "annotations")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(default)]
     pub annotations: Option<Annotations>,
 
     /// Description of the resource
-    #[serde(rename = "description")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(default)]
     pub description: Option<String>,
@@ -967,23 +898,19 @@ pub struct Resource {
     pub mime_type: Option<String>,
 
     /// Human-readable name
-    #[serde(rename = "name")]
     pub name: String,
 
     /// Size in bytes
-    #[serde(rename = "size")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(default)]
     pub size: Option<i64>,
 
     /// Human-readable title
-    #[serde(rename = "title")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(default)]
     pub title: Option<String>,
 
     /// URI of the resource
-    #[serde(rename = "uri")]
     pub uri: String,
 }
 
@@ -1012,13 +939,11 @@ pub struct ResourceLink {
     pub meta: Option<Meta>,
 
     /// Optional resource annotations
-    #[serde(rename = "annotations")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(default)]
     pub annotations: Option<Annotations>,
 
     /// Optional description of the resource
-    #[serde(rename = "description")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(default)]
     pub description: Option<String>,
@@ -1030,26 +955,21 @@ pub struct ResourceLink {
     pub mime_type: Option<String>,
 
     /// Optional human-readable name
-    #[serde(rename = "name")]
     pub name: String,
 
     /// Optional size in bytes
-    #[serde(rename = "size")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(default)]
     pub size: Option<i64>,
 
     /// Optional human-readable title
-    #[serde(rename = "title")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(default)]
     pub title: Option<String>,
 
-    #[serde(rename = "type")]
     pub r#type: ResourceLinkType,
 
     /// URI of the resource
-    #[serde(rename = "uri")]
     pub uri: String,
 }
 
@@ -1072,13 +992,11 @@ pub enum ResourceReferenceType {
 #[derive(Default, Debug, Clone, Serialize, Deserialize, FromBytes, ToBytes)]
 #[encoding(Json)]
 pub struct ResourceTemplate {
-    #[serde(rename = "annotations")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(default)]
     pub annotations: Option<Annotations>,
 
     /// Description of the template
-    #[serde(rename = "description")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(default)]
     pub description: Option<String>,
@@ -1090,11 +1008,9 @@ pub struct ResourceTemplate {
     pub mime_type: Option<String>,
 
     /// Human-readable name
-    #[serde(rename = "name")]
     pub name: String,
 
     /// Human-readable title
-    #[serde(rename = "title")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(default)]
     pub title: Option<String>,
@@ -1107,11 +1023,9 @@ pub struct ResourceTemplate {
 #[derive(Default, Debug, Clone, Serialize, Deserialize, FromBytes, ToBytes)]
 #[encoding(Json)]
 pub struct ResourceTemplateReference {
-    #[serde(rename = "type")]
     pub r#type: ResourceReferenceType,
 
     /// URI or URI template pattern of the resource
-    #[serde(rename = "uri")]
     pub uri: String,
 }
 
@@ -1127,7 +1041,6 @@ pub enum ResourceType {
 #[encoding(Json)]
 pub struct ResourceUpdatedNotificationParam {
     /// URI of the updated resource
-    #[serde(rename = "uri")]
     pub uri: String,
 }
 
@@ -1145,13 +1058,11 @@ pub enum Role {
 #[encoding(Json)]
 pub struct Root {
     /// Optional human-readable name
-    #[serde(rename = "name")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(default)]
     pub name: Option<String>,
 
     /// URI of the root (typically file://)
-    #[serde(rename = "uri")]
     pub uri: String,
 }
 
@@ -1175,16 +1086,13 @@ impl Default for SamplingMessage {
 #[encoding(Json)]
 pub struct Schema {
     /// A map of StringSchema, NumberSchema, BooleanSchema or EnumSchema definitions (no nesting)
-    #[serde(rename = "properties")]
     pub properties: HashMap<String, PrimitiveSchemaDefinition>,
 
     /// Required property names
-    #[serde(rename = "required")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(default)]
     pub required: Option<Vec<String>>,
 
-    #[serde(rename = "type")]
     pub r#type: ObjectType,
 }
 
@@ -1192,12 +1100,10 @@ pub struct Schema {
 #[encoding(Json)]
 pub struct StringSchema {
     /// Description of the string input
-    #[serde(rename = "description")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(default)]
     pub description: Option<String>,
 
-    #[serde(rename = "format")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(default)]
     pub format: Option<StringSchemaFormat>,
@@ -1215,12 +1121,10 @@ pub struct StringSchema {
     pub min_length: Option<i64>,
 
     /// Optional human-readable title
-    #[serde(rename = "title")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(default)]
     pub title: Option<String>,
 
-    #[serde(rename = "type")]
     pub r#type: StringType,
 }
 
@@ -1256,16 +1160,13 @@ pub struct TextContent {
     pub meta: Option<Meta>,
 
     /// Optional content annotations
-    #[serde(rename = "annotations")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(default)]
     pub annotations: Option<Annotations>,
 
     /// The text content
-    #[serde(rename = "text")]
     pub text: String,
 
-    #[serde(rename = "type")]
     pub r#type: TextType,
 }
 
@@ -1285,11 +1186,9 @@ pub struct TextResourceContents {
     pub mime_type: Option<String>,
 
     /// Text content of the resource
-    #[serde(rename = "text")]
     pub text: String,
 
     /// URI of the resource
-    #[serde(rename = "uri")]
     pub uri: String,
 }
 
@@ -1305,13 +1204,11 @@ pub enum TextType {
 #[encoding(Json)]
 pub struct Tool {
     /// Optional tool annotations
-    #[serde(rename = "annotations")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(default)]
     pub annotations: Option<Annotations>,
 
     /// Description of what the tool does
-    #[serde(rename = "description")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(default)]
     pub description: Option<String>,
@@ -1320,7 +1217,6 @@ pub struct Tool {
     pub input_schema: ToolSchema,
 
     /// Unique name of the tool
-    #[serde(rename = "name")]
     pub name: String,
 
     #[serde(rename = "outputSchema")]
@@ -1329,7 +1225,6 @@ pub struct Tool {
     pub output_schema: Option<ToolSchema>,
 
     /// Human-readable title
-    #[serde(rename = "title")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(default)]
     pub title: Option<String>,
@@ -1337,19 +1232,36 @@ pub struct Tool {
 
 #[derive(Default, Debug, Clone, Serialize, Deserialize, FromBytes, ToBytes)]
 #[encoding(Json)]
+pub struct ToolChoice {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default)]
+    pub mode: Option<ToolChoiceMode>,
+}
+
+#[derive(Default, Debug, Clone, Serialize, Deserialize, FromBytes, ToBytes)]
+#[encoding(Json)]
+pub enum ToolChoiceMode {
+    #[default]
+    #[serde(rename = "auto")]
+    Auto,
+    #[serde(rename = "required")]
+    Required,
+    #[serde(rename = "none")]
+    None,
+}
+
+#[derive(Default, Debug, Clone, Serialize, Deserialize, FromBytes, ToBytes)]
+#[encoding(Json)]
 pub struct ToolSchema {
     /// Schema properties
-    #[serde(rename = "properties")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(default)]
     pub properties: Option<Map<String, Value>>,
 
     /// Required properties
-    #[serde(rename = "required")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(default)]
     pub required: Option<Vec<String>>,
 
-    #[serde(rename = "type")]
     pub r#type: ObjectType,
 }
