@@ -2,6 +2,7 @@
 use base64::engine::general_purpose::STANDARD;
 use base64_serde::base64_serde_type;
 use extism_pdk::{FromBytes, Json, ToBytes};
+use schemars::Schema as JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Number, Value};
 use std::collections::HashMap;
@@ -22,36 +23,88 @@ pub struct Annotations {
     pub priority: f32,
 }
 
-#[derive(Default, Debug, Clone, Serialize, Deserialize, FromBytes, ToBytes)]
+#[derive(Default, Debug, Clone, FromBytes, ToBytes)]
 #[encoding(Json)]
 pub struct AudioContent {
     /// Optional additional metadata about the content block
-    #[serde(rename = "_meta")]
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(default)]
     pub meta: Option<Meta>,
 
     /// Optional content annotations
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(default)]
     pub annotations: Option<Annotations>,
 
     /// Base64-encoded audio data
     pub data: String,
 
     /// MIME type of the audio (e.g. 'audio/mpeg')
-    #[serde(rename = "mimeType")]
     pub mime_type: String,
-
-    pub r#type: AudioType,
 }
 
-#[derive(Default, Debug, Clone, Serialize, Deserialize, FromBytes, ToBytes)]
-#[encoding(Json)]
-pub enum AudioType {
-    #[default]
-    #[serde(rename = "audio")]
-    Audio,
+impl Serialize for AudioContent {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        #[derive(Serialize)]
+        struct AudioContentHelper<'a> {
+            #[serde(rename = "_meta")]
+            #[serde(skip_serializing_if = "Option::is_none")]
+            meta: &'a Option<Meta>,
+            #[serde(skip_serializing_if = "Option::is_none")]
+            annotations: &'a Option<Annotations>,
+            data: &'a String,
+            #[serde(rename = "mimeType")]
+            mime_type: &'a String,
+            r#type: &'static str,
+        }
+
+        let helper = AudioContentHelper {
+            meta: &self.meta,
+            annotations: &self.annotations,
+            data: &self.data,
+            mime_type: &self.mime_type,
+            r#type: "audio",
+        };
+
+        helper.serialize(serializer)
+    }
+}
+
+impl<'de> Deserialize<'de> for AudioContent {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        struct AudioContentHelper {
+            #[serde(rename = "_meta")]
+            #[serde(skip_serializing_if = "Option::is_none")]
+            #[serde(default)]
+            meta: Option<Meta>,
+            #[serde(skip_serializing_if = "Option::is_none")]
+            #[serde(default)]
+            annotations: Option<Annotations>,
+            data: String,
+            #[serde(rename = "mimeType")]
+            mime_type: String,
+            r#type: String,
+        }
+
+        let helper = AudioContentHelper::deserialize(deserializer)?;
+
+        if helper.r#type != "audio" {
+            return Err(serde::de::Error::custom(format!(
+                "invalid type for AudioContent: expected 'audio', found '{}'",
+                helper.r#type
+            )));
+        }
+
+        Ok(AudioContent {
+            meta: helper.meta,
+            annotations: helper.annotations,
+            data: helper.data,
+            mime_type: helper.mime_type,
+        })
+    }
 }
 
 #[derive(Default, Debug, Clone, Serialize, Deserialize, FromBytes, ToBytes)]
@@ -76,33 +129,80 @@ pub struct BlobResourceContents {
     pub uri: String,
 }
 
-#[derive(Default, Debug, Clone, Serialize, Deserialize, FromBytes, ToBytes)]
+#[derive(Default, Debug, Clone, FromBytes, ToBytes)]
 #[encoding(Json)]
 pub struct BooleanSchema {
     /// Optional default value
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(default)]
     pub default: Option<bool>,
 
     /// Description of the boolean input
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(default)]
     pub description: Option<String>,
 
     /// Optional human-readable title
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(default)]
     pub title: Option<String>,
-
-    pub r#type: BooleanType,
 }
 
-#[derive(Default, Debug, Clone, Serialize, Deserialize, FromBytes, ToBytes)]
-#[encoding(Json)]
-pub enum BooleanType {
-    #[default]
-    #[serde(rename = "boolean")]
-    Boolean,
+impl Serialize for BooleanSchema {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        #[derive(Serialize)]
+        struct BooleanSchemaHelper<'a> {
+            #[serde(skip_serializing_if = "Option::is_none")]
+            default: &'a Option<bool>,
+            #[serde(skip_serializing_if = "Option::is_none")]
+            description: &'a Option<String>,
+            #[serde(skip_serializing_if = "Option::is_none")]
+            title: &'a Option<String>,
+            r#type: &'static str,
+        }
+
+        let helper = BooleanSchemaHelper {
+            default: &self.default,
+            description: &self.description,
+            title: &self.title,
+            r#type: "boolean",
+        };
+
+        helper.serialize(serializer)
+    }
+}
+
+impl<'de> Deserialize<'de> for BooleanSchema {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        struct BooleanSchemaHelper {
+            #[serde(skip_serializing_if = "Option::is_none")]
+            #[serde(default)]
+            default: Option<bool>,
+            #[serde(skip_serializing_if = "Option::is_none")]
+            #[serde(default)]
+            description: Option<String>,
+            #[serde(skip_serializing_if = "Option::is_none")]
+            #[serde(default)]
+            title: Option<String>,
+            r#type: String,
+        }
+
+        let helper = BooleanSchemaHelper::deserialize(deserializer)?;
+
+        if helper.r#type != "boolean" {
+            return Err(serde::de::Error::custom(format!(
+                "invalid type for BooleanSchema: expected 'boolean', found '{}'",
+                helper.r#type
+            )));
+        }
+
+        Ok(BooleanSchema {
+            default: helper.default,
+            description: helper.description,
+            title: helper.title,
+        })
+    }
 }
 
 #[derive(Default, Debug, Clone, Serialize, Deserialize, FromBytes, ToBytes)]
@@ -408,53 +508,168 @@ pub enum ElicitationResultContentValue {
     Bool(bool),
 }
 
-#[derive(Default, Debug, Clone, Serialize, Deserialize, FromBytes, ToBytes)]
+#[derive(Default, Debug, Clone, FromBytes, ToBytes)]
 #[encoding(Json)]
 pub struct EmbeddedResource {
     /// Optional additional metadata about the embedded resource
-    #[serde(rename = "_meta")]
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(default)]
     pub meta: Option<Meta>,
 
     /// Optional resource annotations
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(default)]
     pub annotations: Option<Annotations>,
 
     /// The embedded TextResourceContents or BlobResourceContents
     pub resource: ResourceContents,
+}
 
-    pub r#type: ResourceType,
+impl Serialize for EmbeddedResource {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        #[derive(Serialize)]
+        struct EmbeddedResourceHelper<'a> {
+            #[serde(rename = "_meta")]
+            #[serde(skip_serializing_if = "Option::is_none")]
+            meta: &'a Option<Meta>,
+            #[serde(skip_serializing_if = "Option::is_none")]
+            annotations: &'a Option<Annotations>,
+            resource: &'a ResourceContents,
+            r#type: &'static str,
+        }
+
+        let helper = EmbeddedResourceHelper {
+            meta: &self.meta,
+            annotations: &self.annotations,
+            resource: &self.resource,
+            r#type: "resource",
+        };
+
+        helper.serialize(serializer)
+    }
+}
+
+impl<'de> Deserialize<'de> for EmbeddedResource {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        struct EmbeddedResourceHelper {
+            #[serde(rename = "_meta")]
+            #[serde(skip_serializing_if = "Option::is_none")]
+            #[serde(default)]
+            meta: Option<Meta>,
+            #[serde(skip_serializing_if = "Option::is_none")]
+            #[serde(default)]
+            annotations: Option<Annotations>,
+            resource: ResourceContents,
+            r#type: String,
+        }
+
+        let helper = EmbeddedResourceHelper::deserialize(deserializer)?;
+
+        if helper.r#type != "resource" {
+            return Err(serde::de::Error::custom(format!(
+                "invalid type for EmbeddedResource: expected 'resource', found '{}'",
+                helper.r#type
+            )));
+        }
+
+        Ok(EmbeddedResource {
+            meta: helper.meta,
+            annotations: helper.annotations,
+            resource: helper.resource,
+        })
+    }
 }
 
 #[derive(Default, Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Empty {}
 
-#[derive(Default, Debug, Clone, Serialize, Deserialize, FromBytes, ToBytes)]
+#[derive(Default, Debug, Clone, FromBytes, ToBytes)]
 #[encoding(Json)]
 pub struct EnumSchema {
     /// Description of the enum input
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(default)]
     pub description: Option<String>,
 
     /// Array of allowed string values
     pub r#enum: Vec<String>,
 
     /// Optional array of human-readable names for the enum values
-    #[serde(rename = "enumNames")]
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(default)]
     pub enum_names: Option<Vec<String>>,
 
     /// Optional human-readable title
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(default)]
     pub title: Option<String>,
+}
 
-    pub r#type: StringType,
+impl Serialize for EnumSchema {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        #[derive(Serialize)]
+        struct EnumSchemaHelper<'a> {
+            #[serde(skip_serializing_if = "Option::is_none")]
+            description: &'a Option<String>,
+            r#enum: &'a Vec<String>,
+            #[serde(rename = "enumNames")]
+            #[serde(skip_serializing_if = "Option::is_none")]
+            enum_names: &'a Option<Vec<String>>,
+            #[serde(skip_serializing_if = "Option::is_none")]
+            title: &'a Option<String>,
+            r#type: &'static str,
+        }
+
+        let helper = EnumSchemaHelper {
+            description: &self.description,
+            r#enum: &self.r#enum,
+            enum_names: &self.enum_names,
+            title: &self.title,
+            r#type: "string",
+        };
+
+        helper.serialize(serializer)
+    }
+}
+
+impl<'de> Deserialize<'de> for EnumSchema {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        struct EnumSchemaHelper {
+            #[serde(skip_serializing_if = "Option::is_none")]
+            #[serde(default)]
+            description: Option<String>,
+            r#enum: Vec<String>,
+            #[serde(rename = "enumNames")]
+            #[serde(skip_serializing_if = "Option::is_none")]
+            #[serde(default)]
+            enum_names: Option<Vec<String>>,
+            #[serde(skip_serializing_if = "Option::is_none")]
+            #[serde(default)]
+            title: Option<String>,
+            r#type: String,
+        }
+
+        let helper = EnumSchemaHelper::deserialize(deserializer)?;
+
+        if helper.r#type != "string" {
+            return Err(serde::de::Error::custom(format!(
+                "invalid type for EnumSchema: expected 'string', found '{}'",
+                helper.r#type
+            )));
+        }
+
+        Ok(EnumSchema {
+            description: helper.description,
+            r#enum: helper.r#enum,
+            enum_names: helper.enum_names,
+            title: helper.title,
+        })
+    }
 }
 
 #[derive(Default, Debug, Clone, Serialize, Deserialize, FromBytes, ToBytes)]
@@ -489,36 +704,88 @@ pub struct GetPromptResult {
     pub messages: Vec<PromptMessage>,
 }
 
-#[derive(Default, Debug, Clone, Serialize, Deserialize, FromBytes, ToBytes)]
+#[derive(Default, Debug, Clone, FromBytes, ToBytes)]
 #[encoding(Json)]
 pub struct ImageContent {
     /// Optional additional metadata about the content block
-    #[serde(rename = "_meta")]
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(default)]
     pub meta: Option<Meta>,
 
     /// Optional content annotations
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(default)]
     pub annotations: Option<Annotations>,
 
     /// Base64-encoded image data
     pub data: String,
 
     /// MIME type of the image (e.g. 'image/png')
-    #[serde(rename = "mimeType")]
     pub mime_type: String,
-
-    pub r#type: ImageType,
 }
 
-#[derive(Default, Debug, Clone, Serialize, Deserialize, FromBytes, ToBytes)]
-#[encoding(Json)]
-pub enum ImageType {
-    #[default]
-    #[serde(rename = "image")]
-    Image,
+impl Serialize for ImageContent {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        #[derive(Serialize)]
+        struct ImageContentHelper<'a> {
+            #[serde(rename = "_meta")]
+            #[serde(skip_serializing_if = "Option::is_none")]
+            meta: &'a Option<Meta>,
+            #[serde(skip_serializing_if = "Option::is_none")]
+            annotations: &'a Option<Annotations>,
+            data: &'a String,
+            #[serde(rename = "mimeType")]
+            mime_type: &'a String,
+            r#type: &'static str,
+        }
+
+        let helper = ImageContentHelper {
+            meta: &self.meta,
+            annotations: &self.annotations,
+            data: &self.data,
+            mime_type: &self.mime_type,
+            r#type: "image",
+        };
+
+        helper.serialize(serializer)
+    }
+}
+
+impl<'de> Deserialize<'de> for ImageContent {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        struct ImageContentHelper {
+            #[serde(rename = "_meta")]
+            #[serde(skip_serializing_if = "Option::is_none")]
+            #[serde(default)]
+            meta: Option<Meta>,
+            #[serde(skip_serializing_if = "Option::is_none")]
+            #[serde(default)]
+            annotations: Option<Annotations>,
+            data: String,
+            #[serde(rename = "mimeType")]
+            mime_type: String,
+            r#type: String,
+        }
+
+        let helper = ImageContentHelper::deserialize(deserializer)?;
+
+        if helper.r#type != "image" {
+            return Err(serde::de::Error::custom(format!(
+                "invalid type for ImageContent: expected 'image', found '{}'",
+                helper.r#type
+            )));
+        }
+
+        Ok(ImageContent {
+            meta: helper.meta,
+            annotations: helper.annotations,
+            data: helper.data,
+            mime_type: helper.mime_type,
+        })
+    }
 }
 
 #[derive(Default, Debug, Clone, Serialize, Deserialize, FromBytes, ToBytes)]
@@ -689,14 +956,6 @@ pub enum NumberType {
 
 #[derive(Default, Debug, Clone, Serialize, Deserialize, FromBytes, ToBytes)]
 #[encoding(Json)]
-pub enum ObjectType {
-    #[default]
-    #[serde(rename = "object")]
-    Object,
-}
-
-#[derive(Default, Debug, Clone, Serialize, Deserialize, FromBytes, ToBytes)]
-#[encoding(Json)]
 pub struct PluginNotificationContext {
     /// Additional metadata about the notification
     #[serde(rename = "_meta")]
@@ -819,26 +1078,67 @@ pub struct PromptMessage {
     pub role: Role,
 }
 
-#[derive(Default, Debug, Clone, Serialize, Deserialize, FromBytes, ToBytes)]
+#[derive(Default, Debug, Clone, FromBytes, ToBytes)]
 #[encoding(Json)]
 pub struct PromptReference {
     /// Name of the prompt
     pub name: String,
 
     /// Optional human-readable title
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(default)]
     pub title: Option<String>,
-
-    pub r#type: PromptReferenceType,
 }
 
-#[derive(Default, Debug, Clone, Serialize, Deserialize, FromBytes, ToBytes)]
-#[encoding(Json)]
-pub enum PromptReferenceType {
-    #[default]
-    #[serde(rename = "prompt")]
-    Prompt,
+impl Serialize for PromptReference {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        #[derive(Serialize)]
+        struct PromptReferenceHelper<'a> {
+            name: &'a String,
+            #[serde(skip_serializing_if = "Option::is_none")]
+            title: &'a Option<String>,
+            r#type: &'static str,
+        }
+
+        let helper = PromptReferenceHelper {
+            name: &self.name,
+            title: &self.title,
+            r#type: "prompt",
+        };
+
+        helper.serialize(serializer)
+    }
+}
+
+impl<'de> Deserialize<'de> for PromptReference {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        struct PromptReferenceHelper {
+            name: String,
+            #[serde(skip_serializing_if = "Option::is_none")]
+            #[serde(default)]
+            title: Option<String>,
+            r#type: String,
+        }
+
+        let helper = PromptReferenceHelper::deserialize(deserializer)?;
+
+        if helper.r#type != "prompt" {
+            return Err(serde::de::Error::custom(format!(
+                "invalid type for PromptReference: expected 'prompt', found '{}'",
+                helper.r#type
+            )));
+        }
+
+        Ok(PromptReference {
+            name: helper.name,
+            title: helper.title,
+        })
+    }
 }
 
 #[derive(Default, Debug, Clone, Serialize, Deserialize, FromBytes, ToBytes)]
@@ -929,64 +1229,128 @@ impl Default for ResourceContents {
     }
 }
 
-#[derive(Default, Debug, Clone, Serialize, Deserialize, FromBytes, ToBytes)]
+#[derive(Default, Debug, Clone, FromBytes, ToBytes)]
 #[encoding(Json)]
 pub struct ResourceLink {
     /// Optional additional metadata about the resource link
-    #[serde(rename = "_meta")]
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(default)]
     pub meta: Option<Meta>,
 
     /// Optional resource annotations
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(default)]
     pub annotations: Option<Annotations>,
 
     /// Optional description of the resource
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(default)]
     pub description: Option<String>,
 
     /// Optional MIME type of the resource
-    #[serde(rename = "mimeType")]
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(default)]
     pub mime_type: Option<String>,
 
     /// Optional human-readable name
     pub name: String,
 
     /// Optional size in bytes
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(default)]
     pub size: Option<i64>,
 
     /// Optional human-readable title
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(default)]
     pub title: Option<String>,
-
-    pub r#type: ResourceLinkType,
 
     /// URI of the resource
     pub uri: String,
 }
 
-#[derive(Default, Debug, Clone, Serialize, Deserialize, FromBytes, ToBytes)]
-#[encoding(Json)]
-pub enum ResourceLinkType {
-    #[default]
-    #[serde(rename = "resource_link")]
-    ResourceLink,
+impl Serialize for ResourceLink {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        #[derive(Serialize)]
+        struct ResourceLinkHelper<'a> {
+            #[serde(rename = "_meta")]
+            #[serde(skip_serializing_if = "Option::is_none")]
+            meta: &'a Option<Meta>,
+            #[serde(skip_serializing_if = "Option::is_none")]
+            annotations: &'a Option<Annotations>,
+            #[serde(skip_serializing_if = "Option::is_none")]
+            description: &'a Option<String>,
+            #[serde(rename = "mimeType")]
+            #[serde(skip_serializing_if = "Option::is_none")]
+            mime_type: &'a Option<String>,
+            name: &'a String,
+            #[serde(skip_serializing_if = "Option::is_none")]
+            size: &'a Option<i64>,
+            #[serde(skip_serializing_if = "Option::is_none")]
+            title: &'a Option<String>,
+            r#type: &'static str,
+            uri: &'a String,
+        }
+
+        let helper = ResourceLinkHelper {
+            meta: &self.meta,
+            annotations: &self.annotations,
+            description: &self.description,
+            mime_type: &self.mime_type,
+            name: &self.name,
+            size: &self.size,
+            title: &self.title,
+            r#type: "resource_link",
+            uri: &self.uri,
+        };
+
+        helper.serialize(serializer)
+    }
 }
 
-#[derive(Default, Debug, Clone, Serialize, Deserialize, FromBytes, ToBytes)]
-#[encoding(Json)]
-pub enum ResourceReferenceType {
-    #[default]
-    #[serde(rename = "resource")]
-    Resource,
+impl<'de> Deserialize<'de> for ResourceLink {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        struct ResourceLinkHelper {
+            #[serde(rename = "_meta")]
+            #[serde(skip_serializing_if = "Option::is_none")]
+            #[serde(default)]
+            meta: Option<Meta>,
+            #[serde(skip_serializing_if = "Option::is_none")]
+            #[serde(default)]
+            annotations: Option<Annotations>,
+            #[serde(skip_serializing_if = "Option::is_none")]
+            #[serde(default)]
+            description: Option<String>,
+            #[serde(rename = "mimeType")]
+            #[serde(skip_serializing_if = "Option::is_none")]
+            #[serde(default)]
+            mime_type: Option<String>,
+            name: String,
+            #[serde(skip_serializing_if = "Option::is_none")]
+            #[serde(default)]
+            size: Option<i64>,
+            #[serde(skip_serializing_if = "Option::is_none")]
+            #[serde(default)]
+            title: Option<String>,
+            r#type: String,
+            uri: String,
+        }
+
+        let helper = ResourceLinkHelper::deserialize(deserializer)?;
+
+        if helper.r#type != "resource_link" {
+            return Err(serde::de::Error::custom(format!(
+                "invalid type for ResourceLink: expected 'resource_link', found '{}'",
+                helper.r#type
+            )));
+        }
+
+        Ok(ResourceLink {
+            meta: helper.meta,
+            annotations: helper.annotations,
+            description: helper.description,
+            mime_type: helper.mime_type,
+            name: helper.name,
+            size: helper.size,
+            title: helper.title,
+            uri: helper.uri,
+        })
+    }
 }
 
 #[derive(Default, Debug, Clone, Serialize, Deserialize, FromBytes, ToBytes)]
@@ -1020,21 +1384,55 @@ pub struct ResourceTemplate {
     pub uri_template: String,
 }
 
-#[derive(Default, Debug, Clone, Serialize, Deserialize, FromBytes, ToBytes)]
+#[derive(Default, Debug, Clone, FromBytes, ToBytes)]
 #[encoding(Json)]
 pub struct ResourceTemplateReference {
-    pub r#type: ResourceReferenceType,
-
     /// URI or URI template pattern of the resource
     pub uri: String,
 }
 
-#[derive(Default, Debug, Clone, Serialize, Deserialize, FromBytes, ToBytes)]
-#[encoding(Json)]
-pub enum ResourceType {
-    #[default]
-    #[serde(rename = "resource")]
-    Resource,
+impl Serialize for ResourceTemplateReference {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        #[derive(Serialize)]
+        struct ResourceTemplateReferenceHelper<'a> {
+            r#type: &'static str,
+            uri: &'a String,
+        }
+
+        let helper = ResourceTemplateReferenceHelper {
+            r#type: "resource",
+            uri: &self.uri,
+        };
+
+        helper.serialize(serializer)
+    }
+}
+
+impl<'de> Deserialize<'de> for ResourceTemplateReference {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        struct ResourceTemplateReferenceHelper {
+            r#type: String,
+            uri: String,
+        }
+
+        let helper = ResourceTemplateReferenceHelper::deserialize(deserializer)?;
+
+        if helper.r#type != "resource" {
+            return Err(serde::de::Error::custom(format!(
+                "invalid type for ResourceTemplateReference: expected 'resource', found '{}'",
+                helper.r#type
+            )));
+        }
+
+        Ok(ResourceTemplateReference { uri: helper.uri })
+    }
 }
 
 #[derive(Default, Debug, Clone, Serialize, Deserialize, FromBytes, ToBytes)]
@@ -1082,50 +1480,166 @@ impl Default for SamplingMessage {
     }
 }
 
-#[derive(Default, Debug, Clone, Serialize, Deserialize, FromBytes, ToBytes)]
+#[derive(Default, Debug, Clone, FromBytes, ToBytes)]
 #[encoding(Json)]
 pub struct Schema {
     /// A map of StringSchema, NumberSchema, BooleanSchema or EnumSchema definitions (no nesting)
     pub properties: HashMap<String, PrimitiveSchemaDefinition>,
 
     /// Required property names
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(default)]
     pub required: Option<Vec<String>>,
-
-    pub r#type: ObjectType,
 }
 
-#[derive(Default, Debug, Clone, Serialize, Deserialize, FromBytes, ToBytes)]
+impl Serialize for Schema {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        #[derive(Serialize)]
+        struct SchemaHelper<'a> {
+            properties: &'a HashMap<String, PrimitiveSchemaDefinition>,
+            #[serde(skip_serializing_if = "Option::is_none")]
+            required: &'a Option<Vec<String>>,
+            r#type: &'static str,
+        }
+
+        let helper = SchemaHelper {
+            properties: &self.properties,
+            required: &self.required,
+            r#type: "object",
+        };
+
+        helper.serialize(serializer)
+    }
+}
+
+impl<'de> Deserialize<'de> for Schema {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        struct SchemaHelper {
+            properties: HashMap<String, PrimitiveSchemaDefinition>,
+            #[serde(skip_serializing_if = "Option::is_none")]
+            #[serde(default)]
+            required: Option<Vec<String>>,
+            r#type: String,
+        }
+
+        let helper = SchemaHelper::deserialize(deserializer)?;
+
+        if helper.r#type != "object" {
+            return Err(serde::de::Error::custom(format!(
+                "invalid type for Schema: expected 'object', found '{}'",
+                helper.r#type
+            )));
+        }
+
+        Ok(Schema {
+            properties: helper.properties,
+            required: helper.required,
+        })
+    }
+}
+
+#[derive(Default, Debug, Clone, FromBytes, ToBytes)]
 #[encoding(Json)]
 pub struct StringSchema {
     /// Description of the string input
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(default)]
     pub description: Option<String>,
 
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(default)]
     pub format: Option<StringSchemaFormat>,
 
     /// Maximum length of the string
-    #[serde(rename = "maxLength")]
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(default)]
     pub max_length: Option<i64>,
 
     /// Minimum length of the string
-    #[serde(rename = "minLength")]
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(default)]
     pub min_length: Option<i64>,
 
     /// Optional human-readable title
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(default)]
     pub title: Option<String>,
+}
 
-    pub r#type: StringType,
+impl Serialize for StringSchema {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        #[derive(Serialize)]
+        struct StringSchemaHelper<'a> {
+            #[serde(skip_serializing_if = "Option::is_none")]
+            description: &'a Option<String>,
+            #[serde(skip_serializing_if = "Option::is_none")]
+            format: &'a Option<StringSchemaFormat>,
+            #[serde(rename = "maxLength")]
+            #[serde(skip_serializing_if = "Option::is_none")]
+            max_length: &'a Option<i64>,
+            #[serde(rename = "minLength")]
+            #[serde(skip_serializing_if = "Option::is_none")]
+            min_length: &'a Option<i64>,
+            #[serde(skip_serializing_if = "Option::is_none")]
+            title: &'a Option<String>,
+            r#type: &'static str,
+        }
+
+        let helper = StringSchemaHelper {
+            description: &self.description,
+            format: &self.format,
+            max_length: &self.max_length,
+            min_length: &self.min_length,
+            title: &self.title,
+            r#type: "string",
+        };
+
+        helper.serialize(serializer)
+    }
+}
+
+impl<'de> Deserialize<'de> for StringSchema {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        struct StringSchemaHelper {
+            #[serde(skip_serializing_if = "Option::is_none")]
+            #[serde(default)]
+            description: Option<String>,
+            #[serde(skip_serializing_if = "Option::is_none")]
+            #[serde(default)]
+            format: Option<StringSchemaFormat>,
+            #[serde(rename = "maxLength")]
+            #[serde(skip_serializing_if = "Option::is_none")]
+            #[serde(default)]
+            max_length: Option<i64>,
+            #[serde(rename = "minLength")]
+            #[serde(skip_serializing_if = "Option::is_none")]
+            #[serde(default)]
+            min_length: Option<i64>,
+            #[serde(skip_serializing_if = "Option::is_none")]
+            #[serde(default)]
+            title: Option<String>,
+            r#type: String,
+        }
+
+        let helper = StringSchemaHelper::deserialize(deserializer)?;
+
+        if helper.r#type != "string" {
+            return Err(serde::de::Error::custom(format!(
+                "invalid type for StringSchema: expected 'string', found '{}'",
+                helper.r#type
+            )));
+        }
+
+        Ok(StringSchema {
+            description: helper.description,
+            format: helper.format,
+            max_length: helper.max_length,
+            min_length: helper.min_length,
+            title: helper.title,
+        })
+    }
 }
 
 #[derive(Default, Debug, Clone, Serialize, Deserialize, FromBytes, ToBytes)]
@@ -1142,32 +1656,79 @@ pub enum StringSchemaFormat {
     Datetime,
 }
 
-#[derive(Default, Debug, Clone, Serialize, Deserialize, FromBytes, ToBytes)]
-#[encoding(Json)]
-pub enum StringType {
-    #[default]
-    #[serde(rename = "string")]
-    String,
-}
-
-#[derive(Default, Debug, Clone, Serialize, Deserialize, FromBytes, ToBytes)]
+#[derive(Default, Debug, Clone, FromBytes, ToBytes)]
 #[encoding(Json)]
 pub struct TextContent {
     /// Optional additional metadata about the content block
-    #[serde(rename = "_meta")]
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(default)]
     pub meta: Option<Meta>,
 
     /// Optional content annotations
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(default)]
     pub annotations: Option<Annotations>,
 
     /// The text content
     pub text: String,
+}
 
-    pub r#type: TextType,
+impl Serialize for TextContent {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        #[derive(Serialize)]
+        struct TextContentHelper<'a> {
+            #[serde(rename = "_meta")]
+            #[serde(skip_serializing_if = "Option::is_none")]
+            meta: &'a Option<Meta>,
+            #[serde(skip_serializing_if = "Option::is_none")]
+            annotations: &'a Option<Annotations>,
+            text: &'a String,
+            r#type: &'static str,
+        }
+
+        let helper = TextContentHelper {
+            meta: &self.meta,
+            annotations: &self.annotations,
+            text: &self.text,
+            r#type: "text",
+        };
+
+        helper.serialize(serializer)
+    }
+}
+
+impl<'de> Deserialize<'de> for TextContent {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        struct TextContentHelper {
+            #[serde(rename = "_meta")]
+            #[serde(skip_serializing_if = "Option::is_none")]
+            #[serde(default)]
+            meta: Option<Meta>,
+            #[serde(skip_serializing_if = "Option::is_none")]
+            #[serde(default)]
+            annotations: Option<Annotations>,
+            text: String,
+            r#type: String,
+        }
+
+        let helper = TextContentHelper::deserialize(deserializer)?;
+
+        if helper.r#type != "text" {
+            return Err(serde::de::Error::custom(format!(
+                "invalid type for TextContent: expected 'text', found '{}'",
+                helper.r#type
+            )));
+        }
+
+        Ok(TextContent {
+            meta: helper.meta,
+            annotations: helper.annotations,
+            text: helper.text,
+        })
+    }
 }
 
 #[derive(Default, Debug, Clone, Serialize, Deserialize, FromBytes, ToBytes)]
@@ -1194,19 +1755,11 @@ pub struct TextResourceContents {
 
 #[derive(Default, Debug, Clone, Serialize, Deserialize, FromBytes, ToBytes)]
 #[encoding(Json)]
-pub enum TextType {
-    #[default]
-    #[serde(rename = "text")]
-    Text,
-}
-
-#[derive(Default, Debug, Clone, Serialize, Deserialize, FromBytes, ToBytes)]
-#[encoding(Json)]
 pub struct Tool {
     /// Optional tool annotations
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(default)]
-    pub annotations: Option<Annotations>,
+    pub annotations: Option<ToolAnnotations>,
 
     /// Description of what the tool does
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -1214,7 +1767,7 @@ pub struct Tool {
     pub description: Option<String>,
 
     #[serde(rename = "inputSchema")]
-    pub input_schema: ToolSchema,
+    pub input_schema: JsonSchema,
 
     /// Unique name of the tool
     pub name: String,
@@ -1222,11 +1775,34 @@ pub struct Tool {
     #[serde(rename = "outputSchema")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(default)]
-    pub output_schema: Option<ToolSchema>,
+    pub output_schema: Option<JsonSchema>,
 
     /// Human-readable title
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(default)]
+    pub title: Option<String>,
+}
+
+#[derive(Default, Debug, Clone, Serialize, Deserialize, FromBytes, ToBytes)]
+#[encoding(Json)]
+pub struct ToolAnnotations {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "destructiveHint")]
+    pub destructive_hint: Option<bool>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "idempotentHint")]
+    pub idempotent_hint: Option<bool>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "openWorldHint")]
+    pub open_world_hint: Option<bool>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "readOnlyHint")]
+    pub read_only_hint: Option<bool>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub title: Option<String>,
 }
 
@@ -1248,20 +1824,4 @@ pub enum ToolChoiceMode {
     Required,
     #[serde(rename = "none")]
     None,
-}
-
-#[derive(Default, Debug, Clone, Serialize, Deserialize, FromBytes, ToBytes)]
-#[encoding(Json)]
-pub struct ToolSchema {
-    /// Schema properties
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(default)]
-    pub properties: Option<Map<String, Value>>,
-
-    /// Required properties
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(default)]
-    pub required: Option<Vec<String>>,
-
-    pub r#type: ObjectType,
 }
