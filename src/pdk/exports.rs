@@ -1,4 +1,4 @@
-use extism_pdk::{extism::error_set, input, output, Error, Json, Memory};
+use extism_pdk::{Error, Json, Memory, extism::error_set, input, output};
 
 pub(crate) fn return_error(e: Error) -> i32 {
     let err = format!("{e:?}");
@@ -19,7 +19,7 @@ macro_rules! try_input_json {
     }};
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn call_tool() -> i32 {
     let ret = crate::call_tool(try_input_json!()).and_then(|x| output(Json(x)));
 
@@ -29,7 +29,7 @@ pub extern "C" fn call_tool() -> i32 {
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn complete() -> i32 {
     let ret = crate::complete(try_input_json!()).and_then(|x| output(Json(x)));
 
@@ -39,7 +39,7 @@ pub extern "C" fn complete() -> i32 {
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn get_prompt() -> i32 {
     let ret = crate::get_prompt(try_input_json!()).and_then(|x| output(Json(x)));
 
@@ -49,7 +49,7 @@ pub extern "C" fn get_prompt() -> i32 {
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn list_prompts() -> i32 {
     let ret = crate::list_prompts(try_input_json!()).and_then(|x| output(Json(x)));
 
@@ -59,7 +59,7 @@ pub extern "C" fn list_prompts() -> i32 {
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn list_resource_templates() -> i32 {
     let ret = crate::list_resource_templates(try_input_json!()).and_then(|x| output(Json(x)));
 
@@ -69,7 +69,7 @@ pub extern "C" fn list_resource_templates() -> i32 {
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn list_resources() -> i32 {
     let ret = crate::list_resources(try_input_json!()).and_then(|x| output(Json(x)));
 
@@ -79,7 +79,7 @@ pub extern "C" fn list_resources() -> i32 {
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn list_tools() -> i32 {
     let ret = crate::list_tools(try_input_json!()).and_then(|x| output(Json(x)));
 
@@ -89,7 +89,7 @@ pub extern "C" fn list_tools() -> i32 {
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn on_roots_list_changed() -> i32 {
     let ret = crate::on_roots_list_changed(try_input_json!()).and_then(output);
 
@@ -99,7 +99,7 @@ pub extern "C" fn on_roots_list_changed() -> i32 {
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn read_resource() -> i32 {
     let ret = crate::read_resource(try_input_json!()).and_then(|x| output(Json(x)));
 
