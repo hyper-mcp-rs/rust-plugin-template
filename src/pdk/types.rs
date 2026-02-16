@@ -16,8 +16,7 @@ where
 {
     if actual != expected {
         Err(E::custom(format!(
-            "invalid type for {}: expected '{}', found '{}'",
-            type_name, expected, actual
+            "invalid type for {type_name}: expected '{expected}', found '{actual}'"
         )))
     } else {
         Ok(())
