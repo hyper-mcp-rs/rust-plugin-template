@@ -238,7 +238,7 @@ pub(crate) fn call_tool(input: CallToolRequest) -> Result<CallToolResult> {
 
 ### Using Docker
 
-The included `Dockerfile` provides a dimple build that packages your plugin into a container:
+The included `Dockerfile` provides a simple build that packages your plugin into a container:
 
 ```sh
 cargo auditable build --release --target wasm32-wasip1
