@@ -9,6 +9,21 @@ use std::collections::HashMap;
 
 base64_serde_type!(Base64Standard, STANDARD);
 
+/// Validates that a type discriminator matches the expected value.
+fn validate_type_field<E>(actual: &str, expected: &str, type_name: &str) -> Result<(), E>
+where
+    E: serde::de::Error,
+{
+    if actual != expected {
+        Err(E::custom(format!(
+            "invalid type for {}: expected '{}', found '{}'",
+            type_name, expected, actual
+        )))
+    } else {
+        Ok(())
+    }
+}
+
 #[derive(Default, Debug, Clone, Serialize, Deserialize, FromBytes, ToBytes)]
 #[encoding(Json)]
 pub struct Annotations {
@@ -90,13 +105,7 @@ impl<'de> Deserialize<'de> for AudioContent {
         }
 
         let helper = AudioContentHelper::deserialize(deserializer)?;
-
-        if helper.r#type != "audio" {
-            return Err(serde::de::Error::custom(format!(
-                "invalid type for AudioContent: expected 'audio', found '{}'",
-                helper.r#type
-            )));
-        }
+        validate_type_field(&helper.r#type, "audio", "AudioContent")?;
 
         Ok(AudioContent {
             meta: helper.meta,
