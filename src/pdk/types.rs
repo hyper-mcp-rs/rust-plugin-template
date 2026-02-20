@@ -2,12 +2,11 @@
 use base64::engine::general_purpose::STANDARD;
 use base64_serde::base64_serde_type;
 use extism_pdk::{FromBytes, Json, ToBytes};
+use oauth2::{ClientId, ClientSecret, DeviceAuthorizationUrl, Scope, TokenUrl};
 use schemars::Schema as JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Number, Value};
 use std::{collections::HashMap, time::SystemTime};
-
-use oauth2::{ClientId, ClientSecret, DeviceAuthorizationUrl, Scope, TokenUrl};
 
 base64_serde_type!(Base64Standard, STANDARD);
 
