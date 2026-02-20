@@ -5,8 +5,7 @@ use extism_pdk::{FromBytes, Json, ToBytes};
 use schemars::Schema as JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Number, Value};
-use std::collections::HashMap;
-use std::time::SystemTime;
+use std::{collections::HashMap, time::SystemTime};
 
 use oauth2::{ClientId, ClientSecret, DeviceAuthorizationUrl, Scope, TokenUrl};
 
