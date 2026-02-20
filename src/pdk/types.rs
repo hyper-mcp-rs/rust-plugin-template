@@ -284,6 +284,20 @@ pub struct CallToolResult {
     pub structured_content: Option<Map<String, Value>>,
 }
 
+impl CallToolResult {
+    /// Creates an error `CallToolResult` with the given message.
+    pub fn error(error: String) -> CallToolResult {
+        CallToolResult {
+            is_error: Some(true),
+            content: vec![ContentBlock::Text(TextContent {
+                text: error,
+                ..Default::default()
+            })],
+            ..Default::default()
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, FromBytes, ToBytes)]
 #[encoding(Json)]
 pub struct CompleteRequest {
