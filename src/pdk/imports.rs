@@ -30,6 +30,18 @@ pub(crate) fn create_message(
     Ok(res)
 }
 
+/// get_access_token Obtain an OAuth2 access token from the host.
+///
+/// The host manages token acquisition, caching, and refresh. Pass in your
+/// [`OauthCredentials`] and receive back an [`AccessToken`] ready for use
+/// as a bearer token, or `None` if the token could not be obtained.
+#[allow(unused)]
+pub(crate) fn get_access_token(input: OauthCredentials) -> Result<Option<AccessToken>, Error> {
+    let Json(res) = unsafe { raw_imports::get_access_token(Json(input))? };
+
+    Ok(res)
+}
+
 /// get_keyring_secret Gets a secret from the host's keyring (if allowed).
 ///
 /// Plugins can use this to obtain secrets stored for them in the host's keyring.
@@ -119,6 +131,8 @@ mod raw_imports {
         pub(crate) fn create_message(
             input: Json<CreateMessageRequestParam>,
         ) -> Json<CreateMessageResult>;
+
+        pub(crate) fn get_access_token(input: Json<OauthCredentials>) -> Json<Option<AccessToken>>;
 
         pub(crate) fn get_keyring_secret(input: Json<KeyringEntryId>) -> Vec<u8>;
 

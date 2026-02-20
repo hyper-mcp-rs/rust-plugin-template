@@ -6,6 +6,9 @@ use schemars::Schema as JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Number, Value};
 use std::collections::HashMap;
+use std::time::SystemTime;
+
+use oauth2::{ClientId, ClientSecret, DeviceAuthorizationUrl, Scope, TokenUrl};
 
 base64_serde_type!(Base64Standard, STANDARD);
 
@@ -35,6 +38,29 @@ pub struct Annotations {
 
     /// Priority level indicating the importance of the resource
     pub priority: f32,
+}
+
+/// An access token returned by the host's OAuth2 token management.
+///
+/// The host handles token acquisition, caching, and refresh transparently.
+/// Plugins receive a ready-to-use bearer token.
+#[derive(Debug, Clone, Serialize, Deserialize, FromBytes, ToBytes)]
+#[encoding(Json)]
+pub struct AccessToken {
+    /// The bearer token.
+    pub access_token: oauth2::AccessToken,
+    /// When the token expires (if known).
+    pub expires_at: Option<SystemTime>,
+    /// The scopes granted by the token (if known).
+    pub scopes: Option<Vec<Scope>>,
+}
+
+/// The type of client authentication to use when talking to the token endpoint.
+#[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum AuthType {
+    RequestBody,
+    BasicAuth,
 }
 
 #[derive(Default, Debug, Clone, FromBytes, ToBytes)]
@@ -960,6 +986,32 @@ pub enum NumberType {
     Number,
     #[serde(rename = "integer")]
     Integer,
+}
+
+/// Credentials needed to obtain an OAuth2 access token from the host.
+///
+/// Pass this to [`get_access_token`](super::imports::get_access_token) and
+/// the host will return a cached or freshly-acquired [`AccessToken`].
+#[derive(Debug, Clone, Serialize, Deserialize, FromBytes, ToBytes)]
+#[encoding(Json)]
+pub struct OauthCredentials {
+    /// How to authenticate at the token endpoint.
+    pub auth_type: Option<AuthType>,
+    /// The OAuth2 client ID.
+    pub client_id: ClientId,
+    /// The OAuth2 client secret (if required).
+    pub client_secret: Option<ClientSecret>,
+    /// Device authorization endpoint URL. When present the host will use the
+    /// device-code flow (with user elicitation) instead of client-credentials.
+    pub device_authorization_url: Option<DeviceAuthorizationUrl>,
+    /// Timeout in seconds for the device authorization flow. Defaults to 180 (3 minutes).
+    pub device_auth_timeout_secs: Option<u64>,
+    /// Extra parameters to send to the token endpoint.
+    pub extra_params: Option<HashMap<String, String>>,
+    /// Scopes to request.
+    pub scopes: Option<Vec<Scope>>,
+    /// The token endpoint URL.
+    pub token_endpoint_url: TokenUrl,
 }
 
 #[derive(Default, Debug, Clone, Serialize, Deserialize, FromBytes, ToBytes)]
